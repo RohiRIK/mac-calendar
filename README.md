@@ -24,6 +24,16 @@ month view.
 Calendars and Reminders access is asked for only when you turn those on in Settings. No network, no
 dependencies. Swift 6 + SwiftUI, macOS 15+.
 
+## Install
+
+1. Download `MacCalendar-0.2.0.zip` from [Releases](https://github.com/RohiRIK/mac-calendar/releases/latest) and unzip it.
+2. Move `MacCalendar.app` to Applications and open it.
+3. The app is not notarized by Apple, so macOS blocks the first launch. Open **System Settings ›
+   Privacy & Security**, scroll down, and click **Open Anyway** next to MacCalendar. Or in Terminal:
+   `xattr -dr com.apple.quarantine /Applications/MacCalendar.app`
+
+macOS 15 or later, Apple silicon and Intel.
+
 ## Build
 
 ```bash
