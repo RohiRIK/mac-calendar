@@ -136,8 +136,10 @@ public struct SettingsView: View {
         }
         .formStyle(.grouped)
         .toggleStyle(.switch)
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
+        // Wide enough that descriptions fit on one line. The grouped Form scrolls, so the window opens
+        // at 640 pt instead of growing past the screen as sections are added; drag to enlarge. The
+        // window opens at the minimum size (ideal sizes are ignored), so the minimum is the default.
+        .frame(minWidth: 580, minHeight: 640)
         .themed(theme, accent)
         .onAppear {
             model.refreshLoginItem()
