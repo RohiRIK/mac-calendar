@@ -4,12 +4,24 @@ import MacCalendarCore
 import Observation
 import ServiceManagement
 
+public enum ViewMode: String, Sendable { case month, week }
+
 @MainActor
 @Observable
 public final class CalendarModel {
-    /// Any date inside the month on screen.
+    /// Any date inside the month (or week) on screen.
     public private(set) var month: Date
     public private(set) var today: Date
+    /// Day whose events are listed under the grid.
+    public private(set) var selectedDay: Date
+    public let agenda: AgendaModel
+
+    public var mode: ViewMode {
+        didSet {
+            if persists { UserDefaults.standard.set(mode.rawValue, forKey: Prefs.viewMode) }
+            month = selectedDay
+        }
+    }
     public private(set) var opensAtLogin: Bool
     public private(set) var message: String?
 
@@ -21,15 +33,26 @@ public final class CalendarModel {
     private let baseCalendar: Calendar
     private let persists: Bool
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
+    @ObservationIgnored private let hotKey = HotKey()
 
     public init(today: Date = .now, calendar: Calendar = .autoupdatingCurrent, observeSystem: Bool = true) {
+        let defaults = UserDefaults.standard
+        defaults.register(defaults: [Prefs.hotKeyEnabled: true, Prefs.showOtherMonths: true])
         self.today = today
         self.month = today
+        self.selectedDay = today
         self.baseCalendar = calendar
         self.persists = observeSystem
-        self.firstWeekday = observeSystem ? UserDefaults.standard.integer(forKey: Prefs.firstWeekday) : 0
+        self.agenda = AgendaModel(calendar: calendar, observeSystem: observeSystem)
+        self.mode = observeSystem ? ViewMode(rawValue: defaults.string(forKey: Prefs.viewMode) ?? "") ?? .month : .month
+        self.firstWeekday = observeSystem ? defaults.integer(forKey: Prefs.firstWeekday) : 0
         self.opensAtLogin = observeSystem && SMAppService.mainApp.status == .enabled
         guard observeSystem else { return }
+        agenda.accessChanged()
+        hotKey.isEnabled = defaults.bool(forKey: Prefs.hotKeyEnabled)
+        observers.append(NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.hotKey.isEnabled = UserDefaults.standard.bool(forKey: Prefs.hotKeyEnabled) }
+        })
         // Midnight, wake from sleep across a day, and time zone or clock changes all post one of these.
         for name in [Notification.Name.NSCalendarDayChanged, .NSSystemTimeZoneDidChange, .NSSystemClockDidChange] {
             observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
@@ -48,18 +71,45 @@ public final class CalendarModel {
     public var days: [CalendarDay] { MonthGrid.days(month: month, today: today, calendar: calendar) }
     public var weekNumbers: [Int] { MonthGrid.weekNumbers(days: days, calendar: calendar) }
     public var weekdaySymbols: [String] { MonthGrid.weekdaySymbols(calendar: calendar) }
-    public var isShowingToday: Bool { calendar.isDate(month, equalTo: today, toGranularity: .month) }
+    public var weekDays: [CalendarDay] { MonthGrid.week(containing: month, today: today, calendar: calendar) }
 
-    public func showMonth(offset: Int) {
-        month = calendar.date(byAdding: .month, value: offset, to: month) ?? month
+    private var page: Calendar.Component { mode == .month ? .month : .weekOfYear }
+
+    public var isShowingToday: Bool {
+        calendar.isDate(month, equalTo: today, toGranularity: page) && calendar.isDate(selectedDay, inSameDayAs: today)
     }
 
-    public func showToday() { month = today }
+    /// Days on screen, for loading events: the 42-day grid or the week.
+    public var visibleRange: DateInterval {
+        let shown = mode == .month ? days : weekDays
+        guard let first = shown.first?.date, let last = shown.last?.date,
+              let end = calendar.date(byAdding: .day, value: 1, to: last) else { return DateInterval() }
+        return DateInterval(start: first, end: end)
+    }
+
+    public func isSelected(_ date: Date) -> Bool { calendar.isDate(date, inSameDayAs: selectedDay) }
+
+    /// Previous or next month (month view) or week (week view). Keeps the same weekday selected.
+    public func showPage(offset: Int) {
+        month = calendar.date(byAdding: page, value: offset, to: month) ?? month
+        selectedDay = calendar.date(byAdding: page, value: offset, to: selectedDay) ?? selectedDay
+    }
+
+    public func showToday() {
+        month = today
+        selectedDay = today
+    }
+
+    /// Select a day; one outside the page on screen turns the page to it.
+    public func select(_ date: Date) {
+        selectedDay = date
+        if !calendar.isDate(date, equalTo: month, toGranularity: page) { month = date }
+    }
 
     private func dayChanged() {
         let wasShowingToday = isShowingToday
         today = .now
-        if wasShowingToday { month = today }
+        if wasShowingToday { showToday() }
     }
 
     /// Re-read the login item; the user can change it in System Settings › Login Items.

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // Menu-style building blocks modeled on the system Wi-Fi / Control Center menus:
@@ -47,5 +48,22 @@ struct CommandRow: View {
 struct MenuDivider: View {
     var body: some View {
         Divider().padding(.horizontal, 8).padding(.vertical, 5)
+    }
+}
+
+/// Resizes the menu bar window to the panel's height, keeping its top edge under the menu bar.
+/// A `MenuBarExtra` window grows with its content but does not shrink until later, and then shrinks
+/// toward its bottom edge, so a shorter page (6-week month → 5-week month) drops away from the menu bar.
+struct FitWindowHeight: NSViewRepresentable {
+    let height: CGFloat
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        guard let window = view.window, height > 0 else { return }
+        let content = window.contentRect(forFrameRect: window.frame)
+        guard abs(content.height - height) > 0.5 else { return }
+        let fitted = NSRect(x: content.minX, y: content.maxY - height, width: content.width, height: height)
+        window.setFrame(window.frameRect(forContentRect: fitted), display: true)
     }
 }

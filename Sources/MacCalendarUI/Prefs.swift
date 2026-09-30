@@ -8,6 +8,14 @@ public enum Prefs {
     public static let showDateInMenuBar = "showDateInMenuBar"
     /// Bundle id of the app "Open …" launches; empty = system default for calendar files.
     public static let calendarApp = "calendarApp"
+    public static let showEvents = "showEvents"
+    public static let showReminders = "showReminders"
+    /// Comma-separated event calendar identifiers the user turned off in Settings.
+    public static let hiddenCalendars = "hiddenCalendars"
+    public static let showHebrewDates = "showHebrewDates"
+    public static let showHolidays = "showHolidays"
+    public static let hotKeyEnabled = "hotKeyEnabled"
+    public static let viewMode = "viewMode"
     public static let theme = "theme"
     public static let accent = "accent"
 }

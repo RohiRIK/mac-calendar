@@ -6,9 +6,11 @@
     <key>CFBundleIdentifier</key><string>local.macplugins.mac-calendar</string>
     <key>CFBundleName</key><string>Mac Calendar</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>0.2.0</string>
+    <key>CFBundleVersion</key><string>2</string>
     <key>LSMinimumSystemVersion</key><string>15.0</string>
     <key>LSUIElement</key><true/>
+    <key>NSCalendarsFullAccessUsageDescription</key><string>Mac Calendar shows your events in the menu bar calendar and adds events you type.</string>
+    <key>NSRemindersFullAccessUsageDescription</key><string>Mac Calendar shows reminders due each day and lets you check them off.</string>
 </dict>
 </plist>

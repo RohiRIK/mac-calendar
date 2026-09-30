@@ -29,6 +29,23 @@ public enum MonthGrid {
         }
     }
 
+    /// The seven days of the week that contains `date`, starting on the calendar's first weekday.
+    public static func week(containing date: Date, today: Date = .now, calendar: Calendar = .current) -> [CalendarDay] {
+        guard let start = calendar.dateInterval(of: .weekOfYear, for: date)?.start else { return [] }
+        return (0..<7).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
+            return CalendarDay(date: day, day: calendar.component(.day, from: day), inMonth: true,
+                               isToday: calendar.isDate(day, inSameDayAs: today))
+        }
+    }
+
+    /// `days` without trailing weeks that hold no in-month day.
+    public static func trimmingEmptyWeeks(_ days: [CalendarDay]) -> [CalendarDay] {
+        var result = days
+        while result.count >= 7, !result.suffix(7).contains(where: \.inMonth) { result.removeLast(7) }
+        return result
+    }
+
     /// Week of year for each row of `days` (one per 7 cells), using the calendar's own week rules.
     public static func weekNumbers(days: [CalendarDay], calendar: Calendar = .current) -> [Int] {
         stride(from: 0, to: days.count, by: 7).map { calendar.component(.weekOfYear, from: days[$0].date) }

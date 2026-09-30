@@ -80,3 +80,20 @@ private func date(_ y: Int, _ m: Int, _ d: Int, _ cal: Calendar) -> Date {
     let days = MonthGrid.days(month: date(2027, 1, 1, cal), today: .distantPast, calendar: cal)
     #expect(MonthGrid.weekNumbers(days: days, calendar: cal).prefix(2) == [53, 1])
 }
+
+@Test func weekContainingDate() {
+    // Wed 30 Sep 2026, Sunday start: 27 Sep … 3 Oct.
+    let cal = calendar(firstWeekday: 1)
+    let days = MonthGrid.week(containing: date(2026, 9, 30, cal), today: date(2026, 9, 30, cal), calendar: cal)
+    #expect(days.map(\.day) == [27, 28, 29, 30, 1, 2, 3])
+    #expect(days.allSatisfy { $0.inMonth })
+    #expect(days.filter(\.isToday).map(\.day) == [30])
+}
+
+@Test func trimsEmptyTrailingWeeks() {
+    // September 2026, Sunday start, fills five weeks; February 2026 fills exactly four.
+    let cal = calendar(firstWeekday: 1)
+    #expect(MonthGrid.trimmingEmptyWeeks(MonthGrid.days(month: date(2026, 9, 1, cal), today: .distantPast, calendar: cal)).count == 35)
+    #expect(MonthGrid.trimmingEmptyWeeks(MonthGrid.days(month: date(2026, 2, 1, cal), today: .distantPast, calendar: cal)).count == 28)
+    #expect(MonthGrid.trimmingEmptyWeeks(MonthGrid.days(month: date(2026, 8, 1, cal), today: .distantPast, calendar: cal)).count == 42)
+}
